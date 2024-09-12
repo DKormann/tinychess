@@ -1,4 +1,7 @@
 
+![Image](./image.png)
+my little chess engine 
+
 ## run frontend
 just serve static html file in frontend/index html
 
@@ -11,3 +14,4 @@ live-server frontend/
 ``` bash
 python main.py
 ```
+
