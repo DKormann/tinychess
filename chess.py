@@ -65,8 +65,6 @@ class Step:
   before: Piece
   after: Piece
 
-N = 80
-
 N = -10
 S = 10
 E = 1
@@ -101,19 +99,24 @@ class Board:
   def __repr__(self): return '=================\n|'+ '|\n|'.join(' '.join(p.char() if (p:=Piece.from_num(c)) else '.' for c in row[:8]) for row in self.data.reshape(8,10)) + '|\n================='
 
   def flip(self):
-    passant = self.passant and (N - 1 - self.passant)
+    passant = self.passant and (77 - self.passant)
+    
     state = -np.pad(self.data.copy()[-3::-1], (0, 2), 'constant')
-    print(state)
-    print(state.shape)
     return Board(state, self.castles.copy()[::-1], passant)
 
   def move(self,start, end, prom:Optional[Fig]= None):
-    print(f'Moving {start} -> {end}')
     move = Move(self, start, end, prom)
     assert move in self.get_moves(), f'Invalid move {move}, moves are {self.get_moves()}'
+    if self.data[start] == Fig.Pawn.value:
+      if start%10 != end%10 and self.data[end] == 0:
+        assert self.passant == end, f'Invalid passant {self.passant} {end}'
+        self.data[end + S] = 0
+    if self.data[start] == Fig.Pawn.value and end - start == N * 2: self.passant = start + N
+    else: self.passant = None
     self.data[end] = self.data[start]
     self.data[start] = 0
-    return self.flip()
+  
+  def get(self, pos): return self.data[pos] if onboard(pos) else None
 
   def get_moves(self):
     positions = np.where(self.data > 0)
@@ -121,9 +124,12 @@ class Board:
     moves = []
     for pos, piece in zip(positions[0], pieces):
       if piece == Fig.Pawn.value:
-        if self.data[pos + N] == 0:
+        if self.get(pos + N) == 0:
           moves.append(Move(self, pos, pos + N))
-          if self.data[pos + 2*N] == 0: moves.append(Move(self, pos, pos + 2*N))
+          if self.get(pos + N * 2) == 0: moves.append(Move(self, pos, pos + 2*N))
+        for p in [pos + N + E, pos + N + W]:
+          if ((t := self.get(p)) is not None) and (t < 0 or p == self.passant): moves.append(Move(self, pos, p))
+
         continue
       for d in directions[piece]:
         newpos = pos + d
