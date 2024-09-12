@@ -32,4 +32,19 @@ loaded.turn = 2
 
 assert loaded == s
 
-assert check_safe(loaded.data, np.array([6,4]))
+assert check_safe(loaded.data, [6,4])
+
+loaded = State.from_str("""\
+. . . . . . . .
+. n . . . . . .
+. . . . . . . .
+. . . . . . . .
+
+. . . . . . . .
+. . . . . . . .
+. b . . . . . .
+. . . . . . . .""")
+
+assert check_safe(loaded.data, [6,4])
+assert not check_safe(loaded.data, [4,3])
+

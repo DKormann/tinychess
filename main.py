@@ -59,18 +59,17 @@ def check_safe(state, pos):
   for v in [[-1,-1], [-1,1]]:
     loc = pos + v
     if not legalpos(loc): continue
-    if state[loc[0]][loc[1]] in [p, _p]:
-      print("unsafe pawn")
-      return False
+    if state[loc[0]][loc[1]] in [p, _p]: return False
 
-  for threat in [[r, _r, q], [b, q], [n], [k]]:
+  for threat in [[r, _r, q], [b, q], [n], [k, _k]]:
     for dir in piece_dirs[threat[0]]:
-      for targetpos,targetpiece in get_line(state, pos, dir):
-        if targetpiece == o or targetpiece == K or targetpiece == _K: continue
-        if targetpiece  in threat:
-          print(f'unsafe {piece_name(targetpiece)} on {targetpos}')
-          return False
+      for _, targetpiece in get_line(state, pos, dir):
+        if targetpiece == o or targetpiece == K or targetpiece == _K:
+          if threat[0] == r or threat[0] == b: continue
+          else: break
+        if targetpiece  in threat: return False
         break
+  return True
 
 class State:
   start_pos = np.array(
@@ -90,8 +89,7 @@ class State:
   def start(): return State(State.start_pos)
   def copy(self): return State(self.data.copy(), self.turn)
 
-  def check_move(self, move):
-    return (np.array([move]) == self.moves).all((1,2)).any()
+  def check_move(self, move): return (np.array([move]) == self.moves).all((1,2)).any()
 
   def move(self, start, end):
     assert self.check_move((start, end)), f'Invalid move {start} -> {end} \n{self.moves}\n{self}'
@@ -148,7 +146,6 @@ class State:
       if piece == Q or piece == K or piece == _K: dirs = piece_dirs[r] + piece_dirs[b]
       if piece == N: dirs = piece_dirs[n]
 
-
       if piece in [R, _R, B, Q]:
         for dir in dirs:
           for targetpos,targetpiece in get_line(state, pos, dir):
@@ -179,13 +176,14 @@ class State:
     return res
 
   def from_str(s:str):
-    data = [['. k q r b n p _k _r _p K Q R B N P _K _R _P'.split().index(piece) for piece in line.split()] for line in s.split('\n')]
+    data = [['. k q r b n p _k _r _p K Q R B N P _K _R _P'.split().index(piece) for piece in line.split()] for line in s.split('\n') if line]
     return State(np.array(data, dtype=np.int8))
   
   def __eq__(self, other): return (self.data == other.data).all() and self.turn == other.turn
 
-
 board = State.start()
+
+from bot import handle
 
 @app.route('/getstate')
 def get_state(): return flask.jsonify(board.data.tolist())
@@ -196,6 +194,8 @@ def move():
   global board
   move = json.loads(flask.request.json['move'])
   board = board.move(*move)
+  response = handle(board)
+  board = board.move(*response)
   return 'ok'
 
 @app.route('/reset')
