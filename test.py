@@ -1,4 +1,4 @@
-from main import State
+from main import State, check_safe
 import numpy as np
 
 start = State.start()
@@ -15,7 +15,21 @@ assert not s.check_move(((1,0), (4,0)))
 
 s = s.move((1, 0), (2, 0))
 assert s.turn == 2
-print(s.moves)
 
-print(s)
 
+datastring = '''\
+r n b q k b n r
+. p p p p p p p
+p . . . . . . .
+. . . . . . . .
+. . . . . . . .
+P . . . . . . .
+. P P P P P P P
+R N B Q K B N R'''
+
+loaded = State.from_str(datastring)
+loaded.turn = 2
+
+assert loaded == s
+
+assert check_safe(loaded.data, np.array([6,4]))

@@ -41,12 +41,36 @@ def get_piece(white, type): return type if white else type + 9
 def get_line(state, pos, dir):
   while True:
     pos = pos + dir
-    if pos[0] < 0 or pos[0] > 7 or pos[1] < 0 or pos[1] > 7: return
+    if not legalpos(pos): return
     piece = state[pos[0]][pos[1]]
     yield pos, piece
-    if piece != o: return
 
 def legalpos(pos): return pos[0] > -1 and pos[0] < 8 and pos[1] > -1 and pos[1] < 8
+
+piece_dirs = {
+  r: [(1, 0), (-1, 0), (0, 1), (0, -1)],
+  b: [(1, 1), (-1, 1), (1, -1), (-1, -1)],
+  n: [(2, 1), (-2, 1), (2, -1), (-2, -1), (1, 2), (-1, 2), (1, -2), (-1, -2)],
+  k: [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, 1), (1, -1), (-1, -1)]
+}
+
+def check_safe(state, pos):
+  pos = np.array(pos)
+  for v in [[-1,-1], [-1,1]]:
+    loc = pos + v
+    if not legalpos(loc): continue
+    if state[loc[0]][loc[1]] in [p, _p]:
+      print("unsafe pawn")
+      return False
+
+  for threat in [[r, _r, q], [b, q], [n], [k]]:
+    for dir in piece_dirs[threat[0]]:
+      for targetpos,targetpiece in get_line(state, pos, dir):
+        if targetpiece == o or targetpiece == K or targetpiece == _K: continue
+        if targetpiece  in threat:
+          print(f'unsafe {piece_name(targetpiece)} on {targetpos}')
+          return False
+        break
 
 class State:
   start_pos = np.array(
@@ -67,7 +91,6 @@ class State:
   def copy(self): return State(self.data.copy(), self.turn)
 
   def check_move(self, move):
-
     return (np.array([move]) == self.moves).all((1,2)).any()
 
   def move(self, start, end):
@@ -83,6 +106,8 @@ class State:
     if type == p:
       if abs (start[0] - end[0]) > 1: special = True
       if end[0] == 0 or end[0] == 7: type = q
+      if start[1] != end[1] and res.data[end[0]][end[1]] == o: res.data[start[0]][end[1]] = o
+
     piece = make_piece(white, type, special)
     res.data[end[0]][end[1]] = piece
     res.turn += 1
@@ -94,8 +119,7 @@ class State:
     moves = []
     state = self.data
     if mover == black:
-      state = state.copy()[range(7, -1, -1)]
-      state = state + 9
+      state = state.copy()[range(7, -1, -1)] + 9
       state[state == 9] = 0
       state[state >= 19] -= 18
 
@@ -119,20 +143,13 @@ class State:
             moves.append((pos, (passantes[0] - 1, passantes[1])))
 
       dirs = []
-      longrange = False
-      if piece == R or piece == _R:
-        dirs = [(1, 0), (-1, 0), (0, 1), (0, -1)]
-        longrange = True
-      if piece == B:
-        dirs = [(1, 1), (-1, 1), (1, -1), (-1, -1)]
-        longrange = True
-      if piece == Q:
-        dirs = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, 1), (1, -1), (-1, -1)]
-        longrange = True
-      if piece == N: dirs = [(2, 1), (-2, 1), (2, -1), (-2, -1), (1, 2), (-1, 2), (1, -2), (-1, -2)]
-      if piece == K or piece == _K: dirs = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, 1), (1, -1), (-1, -1)]
-        
-      if longrange:
+      if piece == R or piece == _R: dirs = piece_dirs[r]
+      if piece == B: dirs = piece_dirs[b]
+      if piece == Q or piece == K or piece == _K: dirs = piece_dirs[r] + piece_dirs[b]
+      if piece == N: dirs = piece_dirs[n]
+
+
+      if piece in [R, _R, B, Q]:
         for dir in dirs:
           for targetpos,targetpiece in get_line(state, pos, dir):
             if targetpiece == o: moves.append((pos, targetpos))
@@ -142,12 +159,12 @@ class State:
       else:
         for dir in dirs:
           targetpos = pos + dir
-          if not legalpos(targetpos):
-            print(piece_name(piece), 'illegal', targetpos)
-            continue
+          if not legalpos(targetpos): continue
           targetpiece = state[targetpos[0]][targetpos[1]]
-          if targetpiece == o or not is_white(targetpiece): moves.append((pos, targetpos))
-      
+          if targetpiece == o or not is_white(targetpiece): 
+            if piece == K or piece == _K:
+              if not check_safe(state, targetpos): continue
+            moves.append((pos, targetpos))
 
     if mover == black: moves = [((7 - move[0][0], move[0][1]), (7 - move[1][0], move[1][1])) for move in moves]
     return np.array(moves)
@@ -160,6 +177,13 @@ class State:
       res += '|\n'
     res += '-' * 19
     return res
+
+  def from_str(s:str):
+    data = [['. k q r b n p _k _r _p K Q R B N P _K _R _P'.split().index(piece) for piece in line.split()] for line in s.split('\n')]
+    return State(np.array(data, dtype=np.int8))
+  
+  def __eq__(self, other): return (self.data == other.data).all() and self.turn == other.turn
+
 
 board = State.start()
 
