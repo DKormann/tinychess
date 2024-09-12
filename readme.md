@@ -1,5 +1,5 @@
 
-![Image](./image.png)
+<img src="./image.png" width="300" height="300">
 my little chess engine 
 
 ## run frontend
