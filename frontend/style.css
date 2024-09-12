@@ -1,0 +1,69 @@
+body{
+  background-color: rgb(56, 38, 28);
+}
+
+#board{
+  width:80vh;
+  height:80vh;
+  background-color: black;
+  margin: auto;
+  margin-top: 10vh;
+}
+
+.tile{
+  width: 10vh;
+  height: 10vh;
+  background-color: rgb(200, 189, 180);
+  float: left;
+}
+
+.tile.white{
+  background-color: rgb(75, 129, 39);
+}
+
+.piece{
+  width: 8vh;
+  height: 8vh;
+  position: relative;
+  top: 1vh;
+  left: 1vh;
+
+  background-image: url("image.png");
+  background-size: 50vh;
+}
+
+.p-0{
+  background-image: none;
+}
+
+.p-2{
+  background-position-x: -85px;
+}
+
+.p-3, .p-8{
+  background-position-x: -335px;
+}
+
+.p-4{
+  background-position-x: -170px;
+}
+
+.p-5{
+  background-position-x: -255px;
+}
+
+.p-6, .p-9{
+  background-position-x: -420px;
+}
+
+.piece.black{
+  background-position-y: 80px;
+}
+
+.tile.white.active{
+  background-color: red;
+}
+
+.tile.active{
+  background-color: red;
+}
