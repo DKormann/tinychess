@@ -32,27 +32,24 @@ body{
   background-size: 50vh;
 }
 
-.p-0{
-  background-image: none;
-}
 
-.p-2{
+.q{
   background-position-x: -85px;
 }
 
-.p-3, .p-8{
+.r{
   background-position-x: -335px;
 }
 
-.p-4{
+.b{
   background-position-x: -170px;
 }
 
-.p-5{
+.n{
   background-position-x: -255px;
 }
 
-.p-6, .p-9{
+.p{
   background-position-x: -420px;
 }
 

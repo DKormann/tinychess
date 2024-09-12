@@ -11,10 +11,11 @@ mycolor = white;
 
 function setActive(x,y){
   board.querySelectorAll('.active').forEach(tile => tile.classList.remove('active'));
+  console.log(x,y);
+  
 
-
-  if (active[0] > -1){  
-    send_move(JSON.stringify([active, [x,y]]));
+  if (active[0] > -1){
+    send_move(JSON.stringify({start:active[0]*10 + active[1], end:x*10 + y, prom:null}))
     active = [-1,-1];
     return;
   }
@@ -23,9 +24,6 @@ function setActive(x,y){
   tiles[x][y].classList.add('active');
 }
 
-function getcolor(piece){
-  return piece % 2;
-}
 
 function display(boardState){
   board.innerHTML = '';
@@ -41,10 +39,12 @@ function display(boardState){
       tile.className = 'tile';
       if ((x + y) % 2 == 1) tile.className += ' white';
       tile.addEventListener('click', setActive.bind(null, x, y));
-      if (boardState[x][y] != 0){
+      let c = boardState[x][y];
+      if (c != '.'){
+        let iswhite = c == c.toUpperCase();
+        c = c.toLowerCase();
         piece = document.createElement('div');
-        piece.className += `piece p-${(boardState[x][y]-1)%9+1}`;
-        piece.className += ' ' + (boardState[x][y] < 10 ? 'black' : 'white');
+        piece.className = `piece ${c} ${iswhite ? 'white' : 'black'}`;
         tile.appendChild(piece);
       }
 
@@ -63,14 +63,17 @@ active = [-1,-1]
 
 function get_board(){
   fetch('http://localhost:8081/getstate')
-  .then(response => response.json().then(data => {
+  .then(response => response.text().then(data => {
     console.log(data);
+    
+    data = data.split('\n').slice(1,-1).map(row => row.slice(1,-1).split(' '))
     display(data);
   }))
 }
 get_board()
 
 function send_move(move){
+  console.log("sending",move)
   fetch('http://localhost:8081/move', {
     method: 'POST',
     headers: {
