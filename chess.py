@@ -4,6 +4,9 @@ import numpy as np
 import functools
 from typing import Optional
 
+
+K, Q, R, B, N, P = range(1,7)
+
 class Fig(Enum):
   King = auto()
   Queen = auto()
@@ -53,11 +56,9 @@ class Move:
     self.end = end
     self.prom = prom
     self.target = board.data[end]
+
   def __repr__(self): return f'{pos2code(self.start)} -> {pos2code(self.end)}'
-
   def __eq__(self, other): return self.board is other.board and self.start == other.start and self.end == other.end and self.prom == other.prom
-
-
 
 @dataclass
 class Step:
@@ -82,6 +83,19 @@ def onboard(pos:int):
   if pos < 0: return False
   if pos % 10 > 7: return False
   if pos > 79: return False
+  return True
+
+def check_safe(board:np.ndarray, pos:int):
+  for piece, dirs in directions.items():
+    for dir in dirs:
+      newpos = pos + dir
+      while onboard(newpos):
+        if board[newpos] == -piece: return False
+        if board[newpos] != 0:break
+        if piece in [Fig.Knight.value, Fig.King.value]: break
+        newpos += dir
+  for p in [pos + N + E, pos + N + W]:
+    if board[p] == -Fig.Pawn.value: return False
   return True
 
 class Board:
@@ -111,10 +125,24 @@ class Board:
       if start%10 != end%10 and self.data[end] == 0:
         assert self.passant == end, f'Invalid passant {self.passant} {end}'
         self.data[end + S] = 0
+    elif self.data[start] == Fig.King.value:
+      self.castles[0] = False
+      self.castles[1] = False
+    elif self.data[start] == Fig.Rook.value:
+      if start == 70: self.castles[0] = False
+      if start == 77: self.castles[1] = False
     if self.data[start] == Fig.Pawn.value and end - start == N * 2: self.passant = start + N
     else: self.passant = None
     self.data[end] = self.data[start]
     self.data[start] = 0
+    return move
+  
+  def unmove(self, move:Move):
+    self.data[move.start] = Fig.Pawn.value if move.prom else  self.data[move.end]
+    self.data[move.end] = move.target
+    self.passant = move.passant
+    self.castles = move.castles
+    if move.end == move.passant: self.data[move.end + S] = -Fig.Pawn.value
   
   def get(self, pos): return self.data[pos] if onboard(pos) else None
 
@@ -129,7 +157,6 @@ class Board:
           if self.get(pos + N * 2) == 0: moves.append(Move(self, pos, pos + 2*N))
         for p in [pos + N + E, pos + N + W]:
           if ((t := self.get(p)) is not None) and (t < 0 or p == self.passant): moves.append(Move(self, pos, p))
-
         continue
       for d in directions[piece]:
         newpos = pos + d
@@ -140,9 +167,9 @@ class Board:
           if self.data[newpos] < 0: break
           if piece in [Fig.Knight.value, Fig.King.value]: break
           newpos += d
+
     return moves
-  
-  
+
 
 def start():return Board.fromstring('''
     r n b q k b n r

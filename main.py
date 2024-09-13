@@ -22,10 +22,10 @@ def move():
   data = flask.request.json['move']
   state.move(**json.loads(data))
   state = state.flip()
-  print("new passant:",state.passant)
-  # response = handle(state)
-  # state.move(response.start, response.end, response.prom)
-  # state = state.flip()
+
+  response = handle(state)
+  state.move(response.start, response.end, response.prom)
+  state = state.flip()
   return 'ok'
 
 @app.route('/reset')
