@@ -9,4 +9,11 @@ import numpy as np
 np.array([[1,2]]) == np.array([[1,3]])
 # %%
 
-np.equal(np.array([[1,2]]), np.array([[1,3], [1,2]])).all(1)
+a,b,c = range(3)
+# %%
+
+
+for i in [0]:
+  print(i)
+  if i == 0: break
+else: print('no')

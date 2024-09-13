@@ -66,7 +66,8 @@ function get_board(){
   .then(response => response.text().then(data => {
     console.log(data);
     
-    data = data.split('\n').slice(1,-1).map(row => row.slice(1,-1).split(' '))
+    // data = data.split('\n').slice(1,-1).map(row => row.slice(1,-1).split(' '))
+    data = data.split('\n').map(row=>row.split(' '))
     display(data);
   }))
 }
