@@ -16,8 +16,6 @@ function setActive(x,y){
 
   if (active[0] > -1){
     send_move(JSON.stringify({start:active[0]*10 + active[1], end:x*10 + y, prom:null}))
-    active = [-1,-1];
-    return;
   }
 
   active = [x,y];
@@ -61,17 +59,25 @@ fetch('http://localhost:8081/reset')
 
 active = [-1,-1]
 
-function get_board(){
+function get_board(start = false){
   fetch('http://localhost:8081/getstate')
   .then(response => response.text().then(data => {
     console.log(data);
-    
-    // data = data.split('\n').slice(1,-1).map(row => row.slice(1,-1).split(' '))
     data = data.split('\n').map(row=>row.split(' '))
     display(data);
+
+    if (! start){
+      fetch('http://localhost:8081/answer').then(response=>{
+        response.text().then(data=>{
+          console.log(data);
+          data = data.split('\n').map(row=>row.split(' '))
+          display(data);
+        })
+      })
+    }
   }))
 }
-get_board()
+get_board(true)
 
 function send_move(move){
   console.log("sending",move)
@@ -85,6 +91,7 @@ function send_move(move){
     if (response.ok){
       console.log('move sent');
       get_board();
+      
     }else{
       console.log('move failed');
     }

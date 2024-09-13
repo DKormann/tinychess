@@ -3,7 +3,9 @@ from dataclasses import dataclass
 import numpy as np
 from typing import Optional
 
-K, Q, R, B, N, P = 1, 2, 3, 4, 5, 6
+e, K, Q, R, B, N, P = 0, 1, 2, 3, 4, 5, 6
+
+values = np.array([0, 10, 9, 5, 3, 3, 1])
 PieceChars = '.KQRBNP'
 
 def piece_str(piece:int):
@@ -16,6 +18,7 @@ def str_piece(s:str):
 
 class Move:
   def __init__(self, board, start:int, end:int, prom=None):
+    assert prom is None or prom in [Q, R, B, N]
     self.board = board
     self.castles = board.castles.copy()
     self.passant = board.passant
@@ -24,8 +27,8 @@ class Move:
     self.prom = prom
     self.target = board.data[end]
 
-  def __repr__(self): return f'{self.start} -> {self.end}'
-  def __eq__(self, other): return self.board is other.board and self.start == other.start and self.end == other.end and self.prom == other.prom
+  def __repr__(self): return f'{self.start} -> {self.end}' +( piece_str(self.prom) if self .prom else '')
+  def __eq__(self, other): return self.board is other.board and self.start == other.start and self.end == other.end and (self.prom == other.prom or other.prom is None)
 
 U, S, E, W = -10, 10, 1, -1
 
@@ -60,22 +63,27 @@ class Board:
   @staticmethod
   def empty(): return Board(np.zeros(80, dtype=np.int8))
 
-  @staticmethod
   def __repr__(self): return '\n'.join(' '.join(piece_str(c) for c in row[:8]) for row in self.data.reshape(8,10))
+
+  @staticmethod
+  def fromstring(s:str):
+    return Board(np.array([str_piece(c) for line in s.strip().split('\n') for c in (line+' . .').split() if c ]))
 
   def flip(self):
     passant = self.passant and (77 - self.passant)
-    
     state = -np.pad(self.data.copy()[-3::-1], (0, 2), 'constant')
     return Board(state, self.castles.copy()[::-1], passant)
 
-  def move(self,start, end, prom:Optional[int]= None):
+  def move(self,start, end=None, prom:Optional[int]= None):
+    if type(start) == Move:
+      start,end,prom = start.start, start.end, start.prom
     move = Move(self, start, end, prom)
     assert move in self.get_moves(), f'Invalid move {move}, moves are {self.get_moves()}'
     if self.data[start] == P:
       if start%10 != end%10 and self.data[end] == 0:
         assert self.passant == end, f'Invalid passant {self.passant} {end}'
         self.data[end + S] = 0
+      if end // 10 == 0: self.data[start] = prom or Q
     elif self.data[start] == K:
       self.castles[0] = False
       self.castles[1] = False
@@ -88,10 +96,14 @@ class Board:
     else: self.passant = None
     self.data[end] = self.data[start]
     self.data[start] = 0
+    kingpos = np.where(self.data == K)[0]
+    if not check_safe(self.data, kingpos):
+      self.unmove(move)
+      raise RuntimeError('can walk into check')
     return move
   
   def unmove(self, move:Move):
-    self.data[move.start] = P if move.prom else  self.data[move.end]
+    self.data[move.start] = P if move.prom else self.data[move.end]
     self.data[move.end] = move.target
     self.passant = move.passant
     self.castles = move.castles
@@ -99,17 +111,21 @@ class Board:
   
   def get(self, pos): return self.data[pos] if onboard(pos) else None
 
-  def get_moves(self):
+  def get_moves(self)-> list[Move]:
     positions = np.where(self.data > 0)
     pieces = self.data[positions]
     moves = []
     for pos, piece in zip(positions[0], pieces):
       if piece == P:
+        # if pos // 10 == 1: 
         if self.get(pos + U) == 0:
-          moves.append(Move(self, pos, pos + U))
-          if self.get(pos + U * 2) == 0: moves.append(Move(self, pos, pos + 2*U))
+          if pos // 10 == 1: moves.extend([Move(self, pos, pos + U, Q), Move(self, pos, pos + U, N)])
+          else: moves.append(Move(self, pos, pos + U))
+          if pos //10 == 6 and self.get(pos + U * 2) == 0: moves.append(Move(self, pos, pos + 2*U))
         for p in [pos + U + E, pos + U + W]:
-          if ((t := self.get(p)) is not None) and (t < 0 or p == self.passant): moves.append(Move(self, pos, p))
+          if ((t := self.get(p)) is not None) and (t < 0 or p == self.passant):
+            if p // 10 == 0: moves.extend([Move(self, pos, p, Q), Move(self, pos, p, N)])
+            else: moves.append(Move(self, pos, p))
         continue
       for d in directions[piece]:
         newpos = pos + d
@@ -126,6 +142,14 @@ class Board:
             if p == path[-1]: moves.append(Move(self, pos, path[0]))
         self.data[pos] = piece
     return moves
+  
+  def eval(self):
+    if not sum(self.data == K): return 0
+    if not sum(self.data == -K): return 1.
+    myval = sum(values[self.data[np.where(self.data>0)]])
+    otherval = sum(values[-self.data[np.where(self.data<0)]])
+    return myval/(myval + otherval)
+
 
 def start():return Board.fromstring('''
     r n b q k b n r

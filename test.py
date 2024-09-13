@@ -28,7 +28,9 @@ P p . . . . . .
 R N B Q K B N R''')
 
 
-assert len(board.get_moves()) == 22, f'{len(board.get_moves())}'
+print(board.eval())
+
+assert len(board.get_moves()) == 21, f'{len(board.get_moves())}'
 assert str(board) == s.strip()
 
 assert check_safe(board.data, 45)
@@ -66,3 +68,22 @@ board.data[43] = -R
 
 assert not check_safe(board.data, 73)
 assert Move(board, 74, 72) not in board.get_moves()
+
+
+from bot import handle
+
+board = Board.fromstring('''\
+. . . . . . . .
+. . . . . k . .
+. . . . . . . .
+. . . . . . . .
+. . . . . b . .
+. . . . K . . .
+. . . . . . . .
+. . . . . . . .
+''')
+
+board.castles = [False] * 4
+
+print(handle(board))
+

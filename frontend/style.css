@@ -57,10 +57,13 @@ body{
   background-position-y: 80px;
 }
 
-.tile.white.active{
-  background-color: red;
+.tile.white:hover{
+  background-color: rgb(119, 185, 81);
 }
 
-.tile.active{
+.tile:hover{
+  background-color: rgb(221, 221, 221);
+}
+.tile.active, .tile.active:hover{
   background-color: red;
 }

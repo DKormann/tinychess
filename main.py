@@ -9,7 +9,7 @@ flask_cors.CORS(app, resources={r"/*": {"origins": "*"}})
 
 from chess import Board, start
 
-state = start()
+state = Board.empty()
 
 from bot import handle
 
@@ -21,17 +21,24 @@ def move():
   global state
   data = flask.request.json['move']
   state.move(**json.loads(data))
-  state = state.flip()
+  print(state, '\n\n')
+  return 'ok'
 
+@app.route('/answer')
+def answer():
+  global state
+  state = state.flip()
+  print(state, '\n\n')
   response = handle(state)
   state.move(response.start, response.end, response.prom)
   state = state.flip()
-  return 'ok'
+  return str(state)
 
 @app.route('/reset')
 def reset():
   global state
   state = start()
+  state.castles = [False, False, False, False]
   return 'ok'
 
 if __name__ == '__main__':
