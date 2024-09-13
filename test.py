@@ -108,11 +108,17 @@ def response(start, end):
   board = board.flip()
   board.move(handle(board, 2))
   board = board.flip()
-  print(board, '\n')
 
 board = start()
 response(64, 54)
 response(75, 64)
 response(76, 55)
 response(74, 76)
-
+assert str(board).strip() == '''r n b q k b n r
+p p p p p . . .
+. . . . . p p .
+. . . . . . . p
+. . . . . . . .
+. . . . P N . .
+P P P P B P P P
+R N B Q . R K .'''

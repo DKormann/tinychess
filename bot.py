@@ -13,8 +13,6 @@ def absearch(state:Board, depth:int, minval = 0., maxval = 1.):
   if depth == 0: return state.eval(), None
   
   bestmove = None
-
-  pre = str(state)
   for m in state.get_moves():
     try:
       step = state.move(m)
@@ -27,8 +25,6 @@ def absearch(state:Board, depth:int, minval = 0., maxval = 1.):
       state.unmove(step)
 
     except RuntimeError: pass
-
-    assert pre == str(state), f'\n{pre}\n\n{state}'
   
   return minval, bestmove
 

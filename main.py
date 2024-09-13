@@ -21,7 +21,6 @@ def move():
   global state
   data = flask.request.json['move']
   state.move(**json.loads(data))
-
   print(state, '\n\n')
   return 'ok'
 
@@ -30,15 +29,13 @@ def answer():
   global state
   state = state.flip()
 
-
   print(state, '\n\n')
-  response = handle(state)
+  response = handle(state, 3)
+  if response is None:return "GAME OVER"
+  print(response)
   state.move(response.start, response.end, response.prom)
-
   state = state.flip()
-
   print(state)
-  print(state.castles)
   return str(state)
 
 @app.route('/reset')

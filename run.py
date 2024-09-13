@@ -1,19 +1,19 @@
 #%%
-
-import numpy as np
-
-
-(1,2) in np.array([[1,3]])
-# %%
-
-np.array([[1,2]]) == np.array([[1,3]])
-# %%
-
-a,b,c = range(3)
-# %%
+from chess import Board, Move
 
 
-for i in [0]:
-  print(i)
-  if i == 0: break
-else: print('no')
+board = Board.fromstring('''
+r n b q k . n r
+p p . . p p . p
+. . p . . b . .
+. . . p . . . .
+. . . . . Q . .
+. N P B P . . p
+P P . P . P P P
+R . B . . R K .
+''').flip()
+
+
+
+print(Move(60, 50) in board.get_moves())
+
