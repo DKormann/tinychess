@@ -27,9 +27,6 @@ P p . . . . . .
 . P P P P . P P
 R N B Q K B N R''')
 
-
-print(board.eval())
-
 assert len(board.get_moves()) == 21, f'{len(board.get_moves())}'
 assert str(board) == s.strip()
 
@@ -57,6 +54,25 @@ checkreplay(board, Move(board, 74, 65))
 
 checkreplay(board, Move(board, 30, 21))
 
+board = start()
+
+board.move(64, 54)
+board.move(75, 64)
+board.move(76, 57)
+assert Move(board,74, 76) in board.get_moves()
+board.move(74,76)
+
+board = Board.fromstring('''\
+r n b q k b n r
+p p p p p p p p
+. . . . . . . .
+. . . . . . . .
+. . . . . . . .
+. . . . P . . N
+P P P P B P P P
+R N B Q K . . R
+''')
+assert Move(board, 74, 76) in board.get_moves()
 
 board = Board.empty()
 board.data[70] = R
@@ -84,6 +100,19 @@ board = Board.fromstring('''\
 ''')
 
 board.castles = [False] * 4
+assert handle(board) == Move(board, 54, 45)
 
-print(handle(board))
+def response(start, end):
+  global board
+  board.move(start,end)
+  board = board.flip()
+  board.move(handle(board, 2))
+  board = board.flip()
+  print(board, '\n')
+
+board = start()
+response(64, 54)
+response(75, 64)
+response(76, 55)
+response(74, 76)
 

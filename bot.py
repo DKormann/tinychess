@@ -1,28 +1,36 @@
 import random
 from chess import Board, Move
 
-def handle(state:Board):
+def handle(state:Board, depth=2):
 
-  search = SearchNode(0.5)
-
-  search.expand(state)
-
-  print(search.options)
-
-  for i in range(100):
-    search.expand(state)
-
-  bestm, bestn = search.options[0]
-
-
-  print(search.options)
-  for m, n in search.options:
-    if n.eval > bestn.eval:
-      bestn = n
-      bestm = m
-  return bestm
+  val, mv = absearch(state, depth)
+  return mv
 
 from typing import List, Tuple
+
+
+def absearch(state:Board, depth:int, minval = 0., maxval = 1.):
+  if depth == 0: return state.eval(), None
+  
+  bestmove = None
+
+  pre = str(state)
+  for m in state.get_moves():
+    try:
+      step = state.move(m)
+      val = 1 - absearch(state.flip(), depth-1, 1-maxval, 1-minval)[0]
+
+      if val > minval:
+        minval = val
+        bestmove = m
+      if val > maxval: return val, None
+      state.unmove(step)
+
+    except RuntimeError: pass
+
+    assert pre == str(state), f'\n{pre}\n\n{state}'
+  
+  return minval, bestmove
 
 class SearchNode():
   def __init__(self, eval:float):

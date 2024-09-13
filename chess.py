@@ -55,9 +55,10 @@ def check_safe(board:np.ndarray, pos:int):
   return True
 
 class Board:
-  def __init__(self, data:np.ndarray, castles:list[bool]=[True, True, True, True], passant=None):
+  def __init__(self, data:np.ndarray, passant=None):
+
     self.data = data
-    self.castles = castles
+    self.castles = [True, True, True, True]
     self.passant:Optional[int] = passant
   
   @staticmethod
@@ -72,7 +73,9 @@ class Board:
   def flip(self):
     passant = self.passant and (77 - self.passant)
     state = -np.pad(self.data.copy()[-3::-1], (0, 2), 'constant')
-    return Board(state, self.castles.copy()[::-1], passant)
+    res = Board(state, passant)
+    res.castles = self.castles.copy()[::-1]
+    return res
 
   def move(self,start, end=None, prom:Optional[int]= None):
     if type(start) == Move:
@@ -106,7 +109,15 @@ class Board:
     self.data[move.start] = P if move.prom else self.data[move.end]
     self.data[move.end] = move.target
     self.passant = move.passant
-    self.castles = move.castles
+    if self.castles != move.castles:
+
+      if self.data[move.start] == K and (move.start-move.end) == -2:
+        self.data[77] = R
+        self.data[75] = 0
+      if self.data[move.start] == K and (move.start-move.end) == 2:
+        self.data[70] = R
+        self.data[73] = 0
+      self.castles = move.castles
     if move.end == move.passant: self.data[move.end + S] = -P
   
   def get(self, pos): return self.data[pos] if onboard(pos) else None
