@@ -168,6 +168,9 @@ class Board:
     if not sum(self.data == -K): return 1.
     myval = sum(values[self.data[np.where(self.data>0)]])
     otherval = sum(values[-self.data[np.where(self.data<0)]])
+    for t, v in position_vals.items():
+      myval += v[0][self.data == t].sum()
+      otherval += v[1][self.data == -t].sum()
     return myval/(myval + otherval)
 
 
@@ -180,4 +183,49 @@ def start():return Board.fromstring('''
     . . . . . . . .
     P P P P P P P P
     R N B Q K B N R''')
-  
+
+
+position_vals = {
+
+  K:np.array([
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    1, 1, 1, 1, 1, 1, 1, 1,
+    4, 3, 2, 1, 1, 2, 3, 4,
+  ]),
+
+  N:np.array([
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 1, 1, 0, 0, 0,
+    0, 0, 1, 2, 2, 1, 0, 0,
+    0, 1, 2, 2, 2, 2, 1, 0,
+
+    0, 1, 2, 2, 2, 2, 1, 0,
+    0, 0, 1, 2, 2, 1, 0, 0,
+    0, 0, 0, 1, 1, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+  ]),
+
+  P:np.array([
+    7, 7, 7, 7, 7, 7, 7, 7,
+    6, 6, 6, 6, 6, 6, 6, 6,
+    5, 5, 5, 5, 5, 5, 5, 5,
+    4, 4, 4, 4, 4, 4, 4, 4,
+
+    3, 3, 3, 3, 3, 3, 3, 3,
+    2, 2, 2, 2, 2, 2, 2, 2,
+    1, 1, 1, 1, 1, 1, 1, 1,
+    0, 0, 0, 0, 0, 0, 0, 0,
+  ])
+
+}
+
+
+for k in list(position_vals):
+  v = position_vals[k]
+  position_vals[k] = np.pad(v.reshape(8,8), [(0,0),(0,2)]).flatten(),  np.pad(v[::-1].reshape(8,8), [(0,0), (0,2)]).flatten()

@@ -28,4 +28,3 @@ print(response(board))
 
 
 # %%
-
