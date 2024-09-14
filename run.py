@@ -1,19 +1,31 @@
 #%%
 from chess import Board, Move
+from bot import handle
 
+
+
+# %%
+
+
+def response(board):
+
+  print(board)
+  resp = handle(board, 3)
+  return resp
 
 board = Board.fromstring('''
-r n b q k . n r
-p p . . p p . p
-. . p . . b . .
-. . . p . . . .
-. . . . . Q . .
-. N P B P . . p
-P P . P . P P P
-R . B . . R K .
-''').flip()
+. . . . . k . .
+p . p . p p . p
+. . n p . . p .
+. . . . . . . .
+. . . R . . . .
+N . . . . . . .
+b K P . P . P P
+. . . . . B N n 
+''')
+
+print(response(board))
 
 
-
-print(Move(60, 50) in board.get_moves())
+# %%
 

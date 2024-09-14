@@ -14,27 +14,31 @@ state = Board.empty()
 from bot import handle
 
 @app.route('/getstate')
-def get_state(): return str(state)
+def get_state():
+  return str(state)
 
 @app.route('/move', methods=['POST'])
 def move():
   global state
   data = flask.request.json['move']
-  state.move(**json.loads(data))
-  print(state, '\n\n')
+  if not state.move(**json.loads(data)):
+    print(f'illegal move {json.loads(data)}')
+    flask.abort(400)
+
+  print(state, '\n')
   return 'ok'
 
 @app.route('/answer')
 def answer():
   global state
   state = state.flip()
-
-  print(state, '\n\n')
-  response = handle(state, 3)
-  if response is None:return "GAME OVER"
-  print(response)
+  print("thinking:")
+  print(state, '\n')
+  response = handle(state, 4)
+  if response == 'placeholder': return "GAME OVER: you won"
   state.move(response.start, response.end, response.prom)
   state = state.flip()
+  if state.isover(): return "GAME OVER: you lost"
   print(state)
   return str(state)
 

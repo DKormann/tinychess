@@ -69,10 +69,7 @@ function get_board(start = false){
       fetch('http://localhost:8081/answer').then(response=>{
         response.text().then(data=>{
           console.log(data);
-          if (data.startsWith("GAME OVER")){
-            alert ("GAME OVER")
-            return
-          }
+          if (data.startsWith("GAME OVER"))return alert (data)
           data = data.split('\n').map(row=>row.split(' '))
           display(data);
         })

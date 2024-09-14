@@ -27,8 +27,10 @@ class Move:
     self.prom = prom
     self.target = board.data[end]
 
-  def __repr__(self): return f'{self.start} -> {self.end}' +( piece_str(self.prom) if self .prom else '')
-  def __eq__(self, other): return self.board is other.board and self.start == other.start and self.end == other.end and (self.prom == other.prom or other.prom is None)
+  def __repr__(self): return f'{self.start:02} -> {self.end:02}' +( piece_str(self.prom) if self .prom else '')
+  def __eq__(self, other): return isinstance(other, Move) and self.board is other.board\
+    and self.start == other.start and self.end == other.end and (self.prom == other.prom or other.prom is None)
+  def flip(self): return Move(self.board, 77-self.start, 77-self.end, self.prom)
 
 U, S, E, W = -10, 10, 1, -1
 
@@ -81,7 +83,7 @@ class Board:
     if type(start) == Move:
       start,end,prom = start.start, start.end, start.prom
     move = Move(self, start, end, prom)
-    assert move in self.get_moves(), f'Invalid move {move}, moves are {self.get_moves()}'
+    if move not in self.get_moves(): return False
     if self.data[start] == P:
       if start%10 != end%10 and self.data[end] == 0:
         assert self.passant == end, f'Invalid passant {self.passant} {end}'
@@ -102,7 +104,7 @@ class Board:
     kingpos = np.where(self.data == K)[0]
     if not check_safe(self.data, kingpos):
       self.unmove(move)
-      raise RuntimeError('can walk into check')
+      return False
     return move
   
   def unmove(self, move:Move):
@@ -154,6 +156,13 @@ class Board:
         self.data[pos] = piece
     return moves
   
+  def isover(self):
+    for mv in self.get_moves():
+      if self.move(mv):
+        self.unmove(mv)
+        return False
+    return True
+
   def eval(self):
     if not sum(self.data == K): return 0
     if not sum(self.data == -K): return 1.
