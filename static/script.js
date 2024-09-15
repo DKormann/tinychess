@@ -1,6 +1,7 @@
 
 let board = document.getElementById('board');
 let statusbar = document.getElementById("status")
+let face = document.getElementById("face")
 
 console.log(statusbar);
 
@@ -74,16 +75,31 @@ function get_board(start = false){
       fetch('http://localhost:8081/answer').then(response=>{
         response.text().then(data=>{
           console.log(data);
-          if (data.startsWith("GAME OVER"))return alert (data)
+          if (data.startsWith("GAME OVER")){
+            statusbar.textContent = data
+            return
+          }
           data = data.split('\n').map(row=>row.split(' '))
           thinking = false
           display(data);
+          update_face()
 
         })
       })
     }
   }))
 }
+
+function update_face(){
+  fetch('http://localhost:8081/confidence').then(response=>{
+    response.text().then(data=>{
+      console.log("confidence:",data);
+      emoji = ['🥶','🤯','😳','😒','🤨','🤔','😎','🥹','😏','🤩'][Math.round(Number(data) *10 -1)]
+      face.textContent = emoji
+    })
+  })
+}
+
 get_board(true)
 
 function send_move(move){

@@ -28,19 +28,26 @@ def move():
   print(state, '\n')
   return 'ok'
 
+confidence = 0.5
+
 @app.route('/answer')
 def answer():
-  global state
+  global state, confidence
   state = state.flip()
   print("thinking:")
   print(state, '\n')
-  response = handle(state, 4)
+  val, response = handle(state, 4)
+  confidence = val
   if response == 'placeholder': return "GAME OVER: you won"
   state.move(response.start, response.end, response.prom)
   state = state.flip()
   if state.isover(): return "GAME OVER: you lost"
   print(state)
   return str(state)
+
+@app.route('/confidence')
+def confidence():
+  return f'{confidence:0.4f}'
 
 @app.route('/reset')
 def reset():

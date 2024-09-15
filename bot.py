@@ -3,11 +3,11 @@ from chess import Board, Move
 
 def handle(state:Board, depth=2):
 
-  _, mv = absearch(state, depth)
+  val, mv = absearch(state, depth)
   print("plan:")
   for i,m in enumerate(mv): print(m.flip() if i%2 and isinstance(m, Move) else m)
   print()
-  return mv[0]
+  return val, mv[0]
 
 from typing import List, Tuple
 

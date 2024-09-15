@@ -7,8 +7,8 @@ body{
   width:80vh;
   height:80vh;
   background-color: black;
-  margin: auto;
   margin-top: 10vh;
+  margin-left: 50vh;
 }
 
 .tile{
@@ -76,4 +76,31 @@ body{
   margin: auto;
   margin-top: 2vh;
   font-size: 2em;
+}
+
+#character{
+  position: absolute;
+  margin-left: 2vh;
+  background-color: rgb(46, 46, 46);
+  padding:1vh;
+  border-radius: 1vh;
+  border: 1px solid gold;
+  text-align: center  ;
+}
+
+#face{
+  font-size: 20vh;
+  margin: auto;
+}
+
+#chat{
+  background-color: rgb(69, 75, 79);
+  border: 1px solid gold;
+  width:30vh;
+  height: 60vh;
+}
+
+#chat>p{
+  color:white;
+  font-size: 2vh;
 }
