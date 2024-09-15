@@ -34,27 +34,27 @@ body{
 
 
 .q{
-  background-position-x: -85px;
+  background-position-x: -8.5vh;
 }
 
 .r{
-  background-position-x: -335px;
+  background-position-x: -33.5vh;
 }
 
 .b{
-  background-position-x: -170px;
+  background-position-x: -17vh;
 }
 
 .n{
-  background-position-x: -255px;
+  background-position-x: -25.5vh;
 }
 
 .p{
-  background-position-x: -420px;
+  background-position-x: -42vh;
 }
 
 .piece.black{
-  background-position-y: 80px;
+  background-position-y: 8vh;
 }
 
 .tile.white:hover{
