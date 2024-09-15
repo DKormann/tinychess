@@ -1,5 +1,9 @@
 
 let board = document.getElementById('board');
+let statusbar = document.getElementById("status")
+
+console.log(statusbar);
+
 
 tiles = [];
 
@@ -14,7 +18,7 @@ function setActive(x,y){
   console.log(x,y);
   
 
-  if (active[0] > -1){
+  if (! thinking && active[0] > -1){
     send_move(JSON.stringify({start:active[0]*10 + active[1], end:x*10 + y, prom:null}))
   }
 
@@ -22,8 +26,10 @@ function setActive(x,y){
   tiles[x][y].classList.add('active');
 }
 
+var thinking = false
 
 function display(boardState){
+  statusbar.textContent = thinking? 'thinking ... ' : 'your move'
   board.innerHTML = '';
   tiles = [];
   for (let x = 0; x < 8; x++) {
@@ -45,7 +51,6 @@ function display(boardState){
         piece.className = `piece ${c} ${iswhite ? 'white' : 'black'}`;
         tile.appendChild(piece);
       }
-
       if (active[0] == x && active[1] == y) tile.className += ' active';
       
       row.appendChild(tile);
@@ -71,7 +76,9 @@ function get_board(start = false){
           console.log(data);
           if (data.startsWith("GAME OVER"))return alert (data)
           data = data.split('\n').map(row=>row.split(' '))
+          thinking = false
           display(data);
+
         })
       })
     }
@@ -80,6 +87,7 @@ function get_board(start = false){
 get_board(true)
 
 function send_move(move){
+  thinking = true
   console.log("sending",move)
   fetch('http://localhost:8081/move', {
     method: 'POST',
@@ -94,6 +102,7 @@ function send_move(move){
       
     }else{
       console.log('move failed');
+      thinking = false
     }
   })
 }

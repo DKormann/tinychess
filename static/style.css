@@ -1,5 +1,6 @@
 body{
   background-color: rgb(56, 38, 28);
+  font-family: monospace;
 }
 
 #board{
@@ -66,4 +67,13 @@ body{
 }
 .tile.active, .tile.active:hover{
   background-color: red;
+}
+
+#status{
+  color: aliceblue;
+  text-align: center;
+  width:20vh;
+  margin: auto;
+  margin-top: 2vh;
+  font-size: 2em;
 }
