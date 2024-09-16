@@ -1,11 +1,11 @@
 from enum import Enum, auto
 from dataclasses import dataclass
 import numpy as np
-from typing import Optional
+from typing import Optional, Union
 
 e, K, Q, R, B, N, P = 0, 1, 2, 3, 4, 5, 6
 
-values = np.array([0, 10, 9, 5, 3, 3, 1])
+values = np.array([0, 0, 9, 5, 3, 3, 1])
 PieceChars = '.KQRBNP'
 
 def piece_str(piece:int):
@@ -26,7 +26,7 @@ class Move:
     self.end = end
     self.prom = prom
     self.target = board.data[end]
-
+  def __lt__(self, other): return True
   def __repr__(self): return f'{self.start:02} -> {self.end:02}' +( piece_str(self.prom) if self .prom else '')
   def __eq__(self, other): return isinstance(other, Move) and self.board is other.board\
     and self.start == other.start and self.end == other.end and (self.prom == other.prom or other.prom is None)
@@ -66,7 +66,8 @@ class Board:
   @staticmethod
   def empty(): return Board(np.zeros(80, dtype=np.int8))
 
-  def __repr__(self): return '\n'.join(' '.join(piece_str(c) for c in row[:8]) for row in self.data.reshape(8,10))
+  def __repr__(self): 
+    return '\n'.join(' '.join(piece_str(c) for c in row[:8]) for rn,row in enumerate(self.data.reshape(8,10)))
 
   @staticmethod
   def fromstring(s:str):
@@ -79,7 +80,7 @@ class Board:
     res.castles = self.castles.copy()[::-1]
     return res
 
-  def move(self,start, end=None, prom:Optional[int]= None):
+  def move(self,start, end=None, prom:Optional[int]= None)->list[Union[Move, bool]]:
     if type(start) == Move:
       start,end,prom = start.start, start.end, start.prom
     move = Move(self, start, end, prom)
@@ -124,37 +125,42 @@ class Board:
   
   def get(self, pos): return self.data[pos] if onboard(pos) else None
 
-  def get_moves(self)-> list[Move]:
+
+
+  def get_moves(self, only_captures = False)-> list[Move]:
     positions = np.where(self.data > 0)
     pieces = self.data[positions]
     moves = []
-    for pos, piece in zip(positions[0], pieces):
+    captures = []
+    for startpos, piece in zip(positions[0], pieces):
       if piece == P:
         # if pos // 10 == 1: 
-        if self.get(pos + U) == 0:
-          if pos // 10 == 1: moves.extend([Move(self, pos, pos + U, Q), Move(self, pos, pos + U, N)])
-          else: moves.append(Move(self, pos, pos + U))
-          if pos //10 == 6 and self.get(pos + U * 2) == 0: moves.append(Move(self, pos, pos + 2*U))
-        for p in [pos + U + E, pos + U + W]:
-          if ((t := self.get(p)) is not None) and (t < 0 or p == self.passant):
-            if p // 10 == 0: moves.extend([Move(self, pos, p, Q), Move(self, pos, p, N)])
-            else: moves.append(Move(self, pos, p))
+        if self.get(startpos + U) == 0:
+          if startpos // 10 == 1: captures.extend([Move(self, startpos, startpos + U, Q), Move(self, startpos, startpos + U, N)])
+          else: moves.append(Move(self, startpos, startpos + U))
+          if startpos //10 == 6 and self.get(startpos + U * 2) == 0: moves.append(Move(self, startpos, startpos + 2*U))
+        for endpos in [startpos + U + E, startpos + U + W]:
+          if ((t := self.get(endpos)) is not None) and (t < 0 or endpos == self.passant):
+            if endpos // 10 == 0: captures.extend([Move(self, startpos, endpos, Q), Move(self, startpos, endpos, N)])
+            else: moves.append(Move(self, startpos, endpos))
         continue
       for d in directions[piece]:
-        newpos = pos + d
+        endpos = startpos + d
         while True:
-          if not onboard(newpos) or self.data[newpos] > 0: break
-          moves.append(Move(self, pos, newpos))
-          if self.data[newpos] < 0 or piece in [N, K]: break
-          newpos += d
+          if not onboard(endpos) or self.data[endpos] > 0: break
+          (captures if self.data[endpos] < 0 else moves).append(Move(self, startpos, endpos))
+          if self.data[endpos] < 0 or piece in [N, K]: break
+          endpos += d
       if piece == K:
-        self.data[pos] = 0
-        for dir, path in enumerate([[72, 71, 73], [76, 75]]):
-          for p in path:
-            if not self.castles[dir] or self.data[p] != 0 or not check_safe(self.data, p): break
-            if p == path[-1]: moves.append(Move(self, pos, path[0]))
-        self.data[pos] = piece
-    return moves
+        self.data[startpos] = 0
+        for dir, path in enumerate([[72, 71, 73, 74], [76, 75, 74]]): # castles
+          for endpos in path:
+            if not self.castles[dir] or self.data[endpos] != 0 or not check_safe(self.data, endpos): break
+            if endpos == path[-1]: moves.append(Move(self, startpos, path[0]))
+        self.data[startpos] = piece
+    return captures + moves * (not only_captures)
+
+  def tuple(self):return (tuple(self.data), tuple(self.castles), self.passant)
   
   def isover(self):
     for mv in self.get_moves():
@@ -171,6 +177,8 @@ class Board:
     for t, v in position_vals.items():
       myval += v[0][self.data == t].sum()
       otherval += v[1][self.data == -t].sum()
+    myval += sum(self.castles[:2]) / 2
+    otherval += sum(self.castles[2:]) / 2
     return myval/(myval + otherval)
 
 
@@ -188,15 +196,15 @@ def start():return Board.fromstring('''
 position_vals = {
 
   K:np.array([
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0,  0, 0, 0, 0,
+    0, 0, 0, 0,  0, 0, 0, 0,
+    0, 0, 0, 0,  0, 0, 0, 0,
+    0, 0, 0, 0,  0, 0, 0, 0,
 
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    1, 1, 1, 1, 1, 1, 1, 1,
-    4, 3, 2, 1, 1, 2, 3, 4,
+    0, 0, 0, 0,  0, 0, 0, 0,
+    0, 0, 0, 0,  0, 0, 0, 0,
+    1, 1, 1, 1,  1, 1, 1, 1,
+    4, 3, 3, 2,  1, 2, 3, 4,
   ]),
 
   N:np.array([
@@ -212,14 +220,13 @@ position_vals = {
   ]),
 
   P:np.array([
-    7, 7, 7, 7, 7, 7, 7, 7,
-    6, 6, 6, 6, 6, 6, 6, 6,
-    5, 5, 5, 5, 5, 5, 5, 5,
-    4, 4, 4, 4, 4, 4, 4, 4,
-
+    0, 0, 0, 0, 0, 0, 0, 0,
     3, 3, 3, 3, 3, 3, 3, 3,
     2, 2, 2, 2, 2, 2, 2, 2,
+    2, 2, 2, 2, 2, 2, 2, 2,
     1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1,
+    0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0,
   ])
 

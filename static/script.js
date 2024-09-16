@@ -17,9 +17,10 @@ mycolor = white;
 function setActive(x,y){
   board.querySelectorAll('.active').forEach(tile => tile.classList.remove('active'));
   console.log(x,y);
-  
+
 
   if (! thinking && active[0] > -1){
+    console.log(tiles[active[0]][active[1]]);
     send_move(JSON.stringify({start:active[0]*10 + active[1], end:x*10 + y, prom:null}))
   }
 
@@ -30,7 +31,6 @@ function setActive(x,y){
 var thinking = false
 
 function display(boardState){
-  statusbar.textContent = thinking? 'thinking ... ' : 'your move'
   board.innerHTML = '';
   tiles = [];
   for (let x = 0; x < 8; x++) {
@@ -65,42 +65,35 @@ fetch('http://localhost:8081/reset')
 
 active = [-1,-1]
 
-function get_board(start = false){
+function get_board(getresponse = false){
   fetch('http://localhost:8081/getstate')
-  .then(response => response.text().then(data => {
+  .then(response => response.json().then(data => {
+    thinking = getresponse
     console.log(data);
-    data = data.split('\n').map(row=>row.split(' '))
-    display(data);
-    if (! start){
-      fetch('http://localhost:8081/answer').then(response=>{
-        response.text().then(data=>{
-          console.log(data);
-          if (data.startsWith("GAME OVER")){
-            statusbar.textContent = data
-            return
-          }
-          data = data.split('\n').map(row=>row.split(' '))
-          thinking = false
-          display(data);
-          update_face()
+    let state = data.board.split('\n').map(row=>row.split(' '))
 
-        })
-      })
+    display(state);
+    update_face(data.confidence)
+    statusbar.textContent = data.status
+
+    if (getresponse){
+      get_response()
     }
+
   }))
 }
 
-function update_face(){
-  fetch('http://localhost:8081/confidence').then(response=>{
-    response.text().then(data=>{
-      console.log("confidence:",data);
-      emoji = ['🥶','🤯','😳','😒','🤨','🤔','😎','🥹','😏','🤩'][Math.round(Number(data) *10 -1)]
-      face.textContent = emoji
-    })
-  })
+function get_response(){
+  fetch("http://localhost:8081/answer")
+  .then(()=>get_board(false))
 }
 
-get_board(true)
+function update_face(conf){
+  emoji = ['🥶','🤯','😳','😒','🤨','🤔','😎','🥹','😏','🤩'][Math.round(Number(conf) *10 -1)]
+  face.textContent = emoji
+}
+
+get_board()
 
 function send_move(move){
   thinking = true
@@ -114,8 +107,8 @@ function send_move(move){
   }).then(response => {
     if (response.ok){
       console.log('move sent');
-      get_board();
-      
+      get_board(true);
+
     }else{
       console.log('move failed');
       thinking = false

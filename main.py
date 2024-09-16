@@ -3,6 +3,7 @@ import flask_cors
 import json
 import functools, json
 from enum import Enum, auto
+from bot import handle, MChandle
 
 app = flask.Flask(__name__)
 flask_cors.CORS(app, resources={r"/*": {"origins": "*"}})
@@ -10,48 +11,54 @@ flask_cors.CORS(app, resources={r"/*": {"origins": "*"}})
 from chess import Board, start
 
 state = Board.empty()
+status = "running"
+confidence = 0.5
 
-from bot import handle
 
 @app.route('/getstate')
 def get_state():
-  return str(state)
+  return json.dumps({'confidence':confidence, 'board':str(state), "status":status})
 
 @app.route('/move', methods=['POST'])
 def move():
-  global state
+  print("move")
+  global state,status
+  status = 'thinking ...'
   data = flask.request.json['move']
   if not state.move(**json.loads(data)):
     print(f'illegal move {json.loads(data)}')
     flask.abort(400)
-
   print(state, '\n')
+
   return 'ok'
 
-confidence = 0.5
 
 @app.route('/answer')
 def answer():
-  global state, confidence
+  global state, confidence, status
   state = state.flip()
   print("thinking:")
   print(state, '\n')
-  val, response = handle(state, 4)
+  # val, response = handle(state, 4)
+  val, response = MChandle(state, 1_000)
   confidence = val
-  if response == 'placeholder': return "GAME OVER: you won"
+  status = 'your turn'
+  if response == 'placeholder':
+    state = state.flip()
+    status = "GAME OVER: you won"
   state.move(response.start, response.end, response.prom)
   state = state.flip()
-  if state.isover(): return "GAME OVER: you lost"
   print(state)
-  return str(state)
+  if state.isover():
+    print('game over')
+    status = "GAME OVER: you lost"
 
-@app.route('/confidence')
-def confidence():
-  return f'{confidence:0.4f}'
+  return "ok"
 
 @app.route('/reset')
 def reset():
-  global state
+  global state, status
+  status = "your turn"
   state = start()
   return 'ok'
 
