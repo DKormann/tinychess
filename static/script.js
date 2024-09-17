@@ -89,7 +89,7 @@ function get_response(){
 }
 
 function update_face(conf){
-  emoji = ['🥶','🤯','😳','😒','🤨','🤔','😎','🥹','😏','🤩'][Math.round(Number(conf) *10 -1)]
+  emoji = ['🥶','🤯','😳','😒','🤨','🤔','😎','😏','🤩'][Math.max(0, Math.min(8, Math.round(Number(conf) *10 -1)))]
   face.textContent = emoji
 }
 

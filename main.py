@@ -3,7 +3,9 @@ import flask_cors
 import json
 import functools, json
 from enum import Enum, auto
-from bot import handle, MChandle
+from AI import MChandle
+from absearch import handle
+import sys
 
 app = flask.Flask(__name__)
 flask_cors.CORS(app, resources={r"/*": {"origins": "*"}})
@@ -33,17 +35,20 @@ def move():
   return 'ok'
 
 
+handler = MChandle if '--ai' in sys.argv else handle
+
 @app.route('/answer')
 def answer():
   global state, confidence, status
   state = state.flip()
   print("thinking:")
   print(state, '\n')
-  # val, response = handle(state, 4)
-  val, response = MChandle(state, 1_000)
+
+  val, response = handler(state)
+
   confidence = val
   status = 'your turn'
-  if response == 'placeholder':
+  if response == 'resign':
     state = state.flip()
     status = "GAME OVER: you won"
   state.move(response.start, response.end, response.prom)

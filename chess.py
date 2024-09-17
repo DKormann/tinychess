@@ -2,6 +2,9 @@ from enum import Enum, auto
 from dataclasses import dataclass
 import numpy as np
 from typing import Optional, Union
+import math
+
+def sig(x): return 1/(math.exp(-x) + 1)
 
 e, K, Q, R, B, N, P = 0, 1, 2, 3, 4, 5, 6
 
@@ -67,7 +70,8 @@ class Board:
   def empty(): return Board(np.zeros(80, dtype=np.int8))
 
   def __repr__(self): 
-    return '\n'.join(' '.join(piece_str(c) for c in row[:8]) for rn,row in enumerate(self.data.reshape(8,10)))
+    
+    return '\n'.join(' '.join(piece_str(c) for c in row[:8]) for rn,row in enumerate(self.data.reshape(8,10)))+'\n'
 
   @staticmethod
   def fromstring(s:str):
@@ -93,8 +97,8 @@ class Board:
     elif self.data[start] == K:
       self.castles[0] = False
       self.castles[1] = False
-      if start == 74 and end == 72: self.data[[73,70]] = self.data[[70,73]]
-      if start == 74 and end == 76: self.data[[75,77]] = self.data[[77,75]]
+      if start - end == 2: self.data[[70, end+1]] = e, R
+      if start - end == -2: self.data[[77, end-1]] = e, R
     elif self.data[start] == R:
       if start == 70: self.castles[0] = False
       if start == 77: self.castles[1] = False
@@ -102,7 +106,11 @@ class Board:
     else: self.passant = None
     self.data[end] = self.data[start]
     self.data[start] = 0
+  
     kingpos = np.where(self.data == K)[0]
+
+    assert len(kingpos)
+
     if not check_safe(self.data, kingpos):
       self.unmove(move)
       return False
@@ -113,13 +121,12 @@ class Board:
     self.data[move.end] = move.target
     self.passant = move.passant
     if self.castles != move.castles:
-
       if self.data[move.start] == K and (move.start-move.end) == -2:
         self.data[77] = R
-        self.data[75] = 0
+        self.data[move.start+1] = 0
       if self.data[move.start] == K and (move.start-move.end) == 2:
         self.data[70] = R
-        self.data[73] = 0
+        self.data[move.start-1] = 0
       self.castles = move.castles
     if move.end == move.passant: self.data[move.end + S] = -P
   
@@ -153,10 +160,13 @@ class Board:
           endpos += d
       if piece == K:
         self.data[startpos] = 0
-        for dir, path in enumerate([[72, 71, 73, 74], [76, 75, 74]]): # castles
-          for endpos in path:
-            if not self.castles[dir] or self.data[endpos] != 0 or not check_safe(self.data, endpos): break
-            if endpos == path[-1]: moves.append(Move(self, startpos, path[0]))
+        for i in range(2):
+          if self.castles[i]:
+            steps = list(range(startpos, startpos + (3 if i else -3) , (1 if i else -1)))
+            for step in steps:
+              if self.data[step] != 0: break
+              if not check_safe(self.data, step): break
+              if step == steps[-1]: moves.append(Move(self, startpos, step))
         self.data[startpos] = piece
     return captures + moves * (not only_captures)
 
@@ -179,7 +189,7 @@ class Board:
       otherval += v[1][self.data == -t].sum()
     myval += sum(self.castles[:2]) / 2
     otherval += sum(self.castles[2:]) / 2
-    return myval/(myval + otherval)
+    return sig((myval-otherval)/2)
 
 
 def start():return Board.fromstring('''

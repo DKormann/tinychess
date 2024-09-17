@@ -1,74 +1,46 @@
 
 #%%
-import random
+
+import math
 from chess import Board, Move
 
 oo = float('inf')
-
-def handle(state:Board, depth=2):
-
-  val, mv = absearch(state, depth)
-  print("plan:")
-  for i,m in enumerate(mv): print(m.flip() if i%2 and isinstance(m, Move) else m)
-  print()
-  return val, mv[0]
-
-from typing import List, Tuple
-
-
-transtable = {}
-
-def absearch(state:Board, depth:int, minval = 0., maxval = 1.):
-  # key = hash(state.tuple, depth)
-  bestmove = ['placeholder']
-  if depth == 0 or not (options:=state.get_moves(only_captures=depth<1)): return state.eval(), ['fin']
-  for m in options:
-
-    step = state.move(m)
-    if not step: continue
-    val, mv = absearch(state.flip(), depth-1, 1-maxval, 1-minval)
-    val = 1 - val
-
-    if val > minval:
-      minval = val
-      bestmove = [m] + mv
-    if val >= maxval: break
-    state.unmove(step)
-  
-  # transtable[key] = minval
-  return minval, bestmove
-
-
-#%%
-
-
-import math
-
-
 # explore param
 c = 2.
 
-def MChandle(board, N = 40):
+def MChandle(board, N = 100, c=0.2):
   root = MCTSNode()
-  for i in range(N):
-    root.expand(board)
-  
-  return root.score/root.n, max([(child.n, mv) for mv, child in root.children])[1] if root.children else 'placeholder'
+  for i in range(N): root.expand(board, c= c)
+
+  node, plan = root.best_option()
+  print('plan:\n', plan)
+  return root.score/ root.n, plan[0] or "resign"
 
 
 class MCTSNode():
+
+  def __gt__(self,other): return self.n > other.n or self.score > other.score
   def __init__(self):
     self.children:list[tuple[Move, MCTSNode]] = []
     self.n = 0
     self.score = 0
+  
+  def best_option(self):
+    if self.children:
+      child, mv = max([(child, mv) for mv, child in self.children])
+      return child, [mv] + [m.flip() for m in child.best_option()[1]]
+    else: return None, []
 
-  def expand(self, board:Board):
+
+  def expand(self, board:Board, c = c):
     self.n += 1
 
     if self.n == 1:
       self.score = board.eval()
+      self.boardeval = board.eval()
       return self.score
     if self.score == 0 or self.score == 1 : return self.score
+    assert board.eval() != 0
 
     if self.n == 2:
       options = board.get_moves()
@@ -94,6 +66,7 @@ class MCTSNode():
     return self.expand_child(*bestnode, board)
   
   def expand_child(self, mv, child, board:Board):
+    assert self.boardeval != 0
     hist = board.move(mv)
     if hist == False:
       child.n += 1
@@ -102,3 +75,4 @@ class MCTSNode():
     self.score += val
     board.unmove(hist)
     return val
+

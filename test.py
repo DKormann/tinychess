@@ -28,7 +28,7 @@ P p . . . . . .
 R N B Q K B N R''')
 
 assert len(board.get_moves()) == 21, f'{len(board.get_moves())}'
-assert str(board) == s.strip()
+assert str(board).strip() == s.strip()
 
 assert check_safe(board.data, 45)
 assert not check_safe(board.data, 46)
@@ -86,31 +86,22 @@ assert not check_safe(board.data, 73)
 assert Move(board, 74, 72) not in board.get_moves()
 
 
-from bot import handle
 
-board = Board.fromstring('''\
-. . . . . . . .
-. . . . . k . .
-. . . . . . . .
-. . . . . . . .
-. . . . . b . .
-. . . . K . . .
-. . . . . . . .
-. . . . . . . .
-''')
+board = Board.empty()
 
-board.castles = [False] * 4
-assert handle(board) == Move(board, 54, 45)
+board.data[70] = R
+board.data[73] = K
 
-def response(start, end):
-  global board
-  board.move(start,end)
-  board = board.flip()
-  board.move(handle(board, 2))
-  board = board.flip()
+rp = str(board)
+step = board.move(73, 71)
 
-board = start()
-response(64, 54)
-response(75, 64)
-response(76, 55)
-response(74, 76)
+print(board)
+
+print(board.castles)
+board.unmove(step)
+
+print(board)
+
+print(step.__dict__)
+
+assert rp == str(board)
