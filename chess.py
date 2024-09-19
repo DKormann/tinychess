@@ -19,7 +19,48 @@ def str_piece(s:str):
   p = PieceChars.index(s.upper())
   return -p if s.islower() else p
 
+
+
 class Move:
+
+
+  @staticmethod
+  def from_algebraic(board, alg:str, flipped:bool):
+    move = alg.strip().replace('x', '').replace('+', '').replace('#', '').replace('=R', '=Q').replace('=B', '=Q')
+    res = []
+    moves = board.get_moves()
+    for opt in moves:
+      for note in opt.algebraics(flipped):
+        if note == move:
+          res += [opt]
+
+    # assert res != [], f'Invalid move: {alg} {res}'
+    if res == []: return None
+    if len(res) > 1:
+      print(flipped)
+      return max(res, key=lambda x: ((x.start%10, x.start//10) if not flipped else (x.start//10, x.start%10)))
+    return res[0]
+
+
+  def algebraics(self, flipped:bool):
+    def num2alg(n:int):
+      n = 77 - n if flipped else n
+      col = n % 10
+      row = 8 - n // 10
+      res = chr(ord('a') + col) + str(row)
+      return res
+
+    piece = piece_str(self.board.data[self.start])
+    start = num2alg(self.start)
+    end = num2alg(self.end)
+    if piece == 'P':
+      if self.end < 10: return [f'{end}={piece_str(self.prom)}']
+      return [end, f'{start[0]}{end}']
+    if piece == 'K':
+      if self.start - self.end == 2: return ['O-O' if flipped else 'O-O-O']
+      if self.start - self.end == -2: return ['O-O-O' if flipped else 'O-O']
+    return [f'{piece}{end}', f'{piece}{start[0]}{end}', f'{piece}{start[1]}{end}']
+
   def __init__(self, board, start:int, end:int, prom=None):
     assert prom is None or prom in [Q, R, B, N]
     self.board = board
@@ -84,7 +125,7 @@ class Board:
     res.castles = self.castles.copy()[::-1]
     return res
 
-  def move(self,start, end=None, prom:Optional[int]= None)->list[Union[Move, bool]]:
+  def move(self,start, end=None, prom:Optional[int]= None):
     if type(start) == Move:
       start,end,prom = start.start, start.end, start.prom
     move = Move(self, start, end, prom)
@@ -107,13 +148,6 @@ class Board:
     self.data[end] = self.data[start]
     self.data[start] = 0
   
-    kingpos = np.where(self.data == K)[0]
-
-    assert len(kingpos)
-
-    if not check_safe(self.data, kingpos):
-      self.unmove(move)
-      return False
     return move
   
   def unmove(self, move:Move):
@@ -131,8 +165,6 @@ class Board:
     if move.end == move.passant: self.data[move.end + S] = -P
   
   def get(self, pos): return self.data[pos] if onboard(pos) else None
-
-
 
   def get_moves(self, only_captures = False)-> list[Move]:
     positions = np.where(self.data > 0)
@@ -172,12 +204,8 @@ class Board:
 
   def tuple(self):return (tuple(self.data), tuple(self.castles), self.passant)
   
-  def isover(self):
-    for mv in self.get_moves():
-      if self.move(mv):
-        self.unmove(mv)
-        return False
-    return True
+  def iswon(self): return sum(self.data == -K) == 0
+  def islost(self): return sum(self.data == K) == 0
 
   def eval(self):
     if not sum(self.data == K): return 0
@@ -215,7 +243,7 @@ position_vals = {
     0, 0, 0, 0,  0, 0, 0, 0,
     1, 1, 1, 1,  1, 1, 1, 1,
     4, 3, 3, 2,  1, 2, 3, 4,
-  ]),
+  ])/2,
 
   N:np.array([
     0, 0, 0, 0, 0, 0, 0, 0,
@@ -227,18 +255,18 @@ position_vals = {
     0, 0, 1, 2, 2, 1, 0, 0,
     0, 0, 0, 1, 1, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0,
-  ]),
+  ])/2,
 
   P:np.array([
     0, 0, 0, 0, 0, 0, 0, 0,
-    3, 3, 3, 3, 3, 3, 3, 3,
-    2, 2, 2, 2, 2, 2, 2, 2,
-    2, 2, 2, 2, 2, 2, 2, 2,
-    1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1,
+    3, 3, 4, 5, 5, 4, 3, 3,
+    2, 2, 3, 4, 4, 3, 2, 2,
+    1, 2, 2, 3, 3, 2, 2, 1,
+    1, 1, 1, 2, 2, 1, 1, 1,
+    0, 1, 1, 1, 1, 1, 1, 0,
     0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0,
-  ])
+  ])/2,
 
 }
 

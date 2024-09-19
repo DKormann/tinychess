@@ -1,12 +1,12 @@
 body{
-  background-color: rgb(56, 38, 28);
+  background-color: rgb(26, 24, 23);
   font-family: monospace;
 }
 
 #board{
   width:80vh;
   height:80vh;
-  background-color: black;
+  background-color: rgb(64, 59, 59);
   margin-top: 10vh;
   margin-left: 50vh;
 }
@@ -93,6 +93,32 @@ body{
   margin: auto;
 }
 
+#history{
+  width:10vh;
+  position: absolute;
+  margin-top: 10vh;
+  margin-left: 135vh;
+  background-color: gray;
+  border-radius: 1vh;
+  border: 1px solid gold;
+  max-height: 40vh;
+  overflow: auto;
+}
+
+#history>p{
+  color:white;
+  font-family: monospace;
+  cursor: pointer;
+  background-color: rgb(92, 92, 92);
+  text-align: center;
+  margin:0;
+  padding:.5em;
+}
+
+#history>p:hover{
+  background-color: grey;
+}
+
 #chat{
   background-color: rgb(69, 75, 79);
   border: 1px solid gold;
@@ -104,3 +130,4 @@ body{
   color:white;
   font-size: 2vh;
 }
+

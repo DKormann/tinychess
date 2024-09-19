@@ -2,17 +2,19 @@
 let board = document.getElementById('board');
 let statusbar = document.getElementById("status")
 let face = document.getElementById("face")
-
-console.log(statusbar);
+let history = document.getElementById("history")
 
 
 tiles = [];
 
 const e = 0;
 
+paststates = []
+
 black = 0;
 white = 1;
 mycolor = white;
+timepoint = 0
 
 function setActive(x,y){
   board.querySelectorAll('.active').forEach(tile => tile.classList.remove('active'));
@@ -60,6 +62,30 @@ function display(boardState){
   }
 }
 
+document.addEventListener('keydown',e=>{
+  if (e.key == "ArrowLeft") timepoint = Math.max(0, timepoint -1)
+  else if (e.key == "ArrowRight") timepoint = Math.min(paststates.length-1, timepoint +1)
+  display(paststates[timepoint])
+})
+
+function movestring(move, flip = false){
+
+  function numpos(pos){
+    pos = Number(pos)
+    console.log(pos)
+    if (flip) pos = 77-pos
+    row = pos % 10
+    col = (pos-row) /10
+    console.log(row, col)
+    row = 'abcdefgh'[row]
+    console.log(row, col)
+    return `${row}${8-col}`
+  }
+
+  [start, end] = move.split("->").map(numpos)
+  return `${start}=>${end}`
+
+}
 
 fetch('http://localhost:8081/reset')
 
@@ -71,15 +97,24 @@ function get_board(getresponse = false){
     thinking = getresponse
     console.log(data);
     let state = data.board.split('\n').map(row=>row.split(' '))
-
+    paststates.push(state)
     display(state);
     update_face(data.confidence)
     statusbar.textContent = data.status
 
-    if (getresponse){
-      get_response()
-    }
+    if (getresponse) get_response()
 
+    history.innerHTML = ''
+    timepoint = data.history.length
+    data.history.forEach((item, c)=>{
+      let p = document.createElement("p")
+      history.appendChild(p)
+      p.innerHTML = movestring(item, c%2)
+      p.addEventListener('click',()=>{
+        display(paststates[c+1])
+      })
+      focus(p)
+    })
   }))
 }
 

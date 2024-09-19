@@ -8,7 +8,10 @@ oo = float('inf')
 # explore param
 c = 2.
 
-def MChandle(board, N = 100, c=0.2):
+lastroot = None
+
+def MChandle(board, N = 2000, c=0.4):
+
   root = MCTSNode()
   for i in range(N): root.expand(board, c= c)
 
