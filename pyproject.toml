@@ -13,4 +13,3 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 where = ["tinychess"]
-
