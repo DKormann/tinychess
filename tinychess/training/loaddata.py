@@ -72,3 +72,4 @@ if __name__ == '__main__':
   print(pieces[0])
 
   print(np.array(lens).mean())
+# %%

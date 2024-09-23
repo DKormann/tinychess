@@ -62,22 +62,22 @@ class LatentAttentionBlock(nn.Module):
     x = residual + out
     return x
 
-  def single_token(self, k ,v, x):
-    """inference time single token sample"""
+  def inference(self, x, k, v):
     residual = x
-    # TODO: add causal mask
+    mask_shape = (x.shape[1], x.shape[1] + k.shape[1])
+    attn_mask = torch.where(causal_mask[:x.shape[1], :x.shape[1]], F.softplus(self.position_bias_mult) * position_bias_base[:mask_shape[0], :mask_shape[1]], negative_infinity_matrix_base[:mask_shape[0], :mask_shape[1]])
     x = self.norm(x)
-    x = F.linear(x, self.expand)
+    x = self.dropout(F.linear(x, self.expand))
     query, key, linear, pre_gelu = x.split((self.qk_dim, self.qk_dim, self.expand_dim, self.expand_dim), dim=-1)
     geglu = linear * F.gelu(pre_gelu)
     geglu_local, geglu_attention_value = geglu.split((self.expand_dim-self.v_dim, self.v_dim), -1)
-    k = torch.cat([k, key], dim=1)
+    key = torch.cat([k, key], dim=1)
     v = torch.cat([v, geglu_attention_value], dim=1)
-    attention = F.scaled_dot_product_attention(query, k, v)
+    print(query.shape, key.shape, v.shape, attn_mask.shape)
+    attention = F.scaled_dot_product_attention(query, key, v, attn_mask=attn_mask)
     out = F.linear(torch.cat([geglu_local, attention], dim=-1), self.project)
     x = residual + out
     return x, key, geglu_attention_value
-
 
 n_pos = 64
 n_piece = 7 # 0 = empty
@@ -89,21 +89,38 @@ class Model(nn.Module):
     self.posemb = nn.Embedding(n_pos, residual_depth, scale_grad_by_freq=True)
     self.pieceemb = nn.Embedding(n_piece, residual_depth, scale_grad_by_freq=True)
     self.norm = nn.LayerNorm(residual_depth)
-    self.blocks = nn.ModuleList([LatentAttentionBlock(residual_depth) for _ in range(num_blocks)])
+    self.blocks:list[LatentAttentionBlock] = nn.ModuleList([LatentAttentionBlock(residual_depth) for _ in range(num_blocks)])
     self.norm2 = nn.LayerNorm(residual_depth)
     self.winprob = nn.Sequential(nn.Linear(residual_depth, 256), nn.GELU(), nn.Linear(256, 3))
 
   def out(self, x): return torch.matmul(x, self.posemb.weight.t())
 
   def forward(self, xpos, xpiece):
-    x = self.posemb(xpos)
-    x += self.pieceemb(xpiece)
-    x += self.timeemb.unsqueeze(0)[:,:xpos.shape[1]]
 
+    x = self.posemb(xpos) + self.pieceemb(xpiece) 
+    x += self.timeemb.unsqueeze(0)[:,:xpos.shape[1]]
     x = self.norm(x)
     for block in self.blocks: x = block(x)
     x = self.norm2(x)
     return self.out(x), self.winprob(x)
+  
+  def inference(self, xpos, xpiece, k, v):
+    x = self.posemb(xpos) + self.pieceemb(xpiece) + self.timeemb.unsqueeze(0)[:,:xpos.shape[1]]
+    x = self.norm(x)
+    KK = []
+    VV = []
+    for block, ki, vi in zip(self.blocks, k, v):
+      x, kk, vv = block.inference(x, ki, vi)
+      KK.append(kk)
+      VV.append(vv)
+
+    x = self.norm2(x)
+    return self.out(x), self.winprob(x), KK, VV
+
+def pretrained():
+  model = Model().to(device)
+  model.load_state_dict(torch.load('tinychess/training/model.pth'))
+  return model
 
 #%%
 if __name__ == '__main__':

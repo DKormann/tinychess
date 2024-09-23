@@ -1,6 +1,7 @@
 README.md
 pyproject.toml
 readme.md
+test/test_model.py
 tinychess/tinychess.egg-info/PKG-INFO
 tinychess/tinychess.egg-info/SOURCES.txt
 tinychess/tinychess.egg-info/dependency_links.txt

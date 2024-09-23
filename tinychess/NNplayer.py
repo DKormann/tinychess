@@ -53,7 +53,7 @@ def playmove(start,end):
   global board
   mv = Move(board, start, end)
   assert board.move(mv), f'move not possible {mv}'
-  print(board)
+  print(board.flip())
   resp = bot.handle(mv)
   assert board.move(resp), f'bot illegal move {resp}'
   print(board)
@@ -62,6 +62,8 @@ playmove(64,44)
 playmove(65,55)
 playmove(63,53)
 playmove(72,36)
-playmove(36,14)
+
 
 #%%
+
+
