@@ -6,3 +6,6 @@ tinychess/tinychess.egg-info/SOURCES.txt
 tinychess/tinychess.egg-info/dependency_links.txt
 tinychess/tinychess.egg-info/requires.txt
 tinychess/tinychess.egg-info/top_level.txt
+tinychess/training/loaddata.py
+tinychess/training/model.py
+tinychess/training/train.py

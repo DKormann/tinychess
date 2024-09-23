@@ -62,6 +62,23 @@ class LatentAttentionBlock(nn.Module):
     x = residual + out
     return x
 
+  def single_token(self, k ,v, x):
+    """inference time single token sample"""
+    residual = x
+    # TODO: add causal mask
+    x = self.norm(x)
+    x = F.linear(x, self.expand)
+    query, key, linear, pre_gelu = x.split((self.qk_dim, self.qk_dim, self.expand_dim, self.expand_dim), dim=-1)
+    geglu = linear * F.gelu(pre_gelu)
+    geglu_local, geglu_attention_value = geglu.split((self.expand_dim-self.v_dim, self.v_dim), -1)
+    k = torch.cat([k, key], dim=1)
+    v = torch.cat([v, geglu_attention_value], dim=1)
+    attention = F.scaled_dot_product_attention(query, k, v)
+    out = F.linear(torch.cat([geglu_local, attention], dim=-1), self.project)
+    x = residual + out
+    return x, key, geglu_attention_value
+
+
 n_pos = 64
 n_piece = 7 # 0 = empty
 
