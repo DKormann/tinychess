@@ -1,0 +1,6 @@
+Metadata-Version: 2.1
+Name: tinychess
+Version: 0.0.1
+Summary: A tiny chess engine
+Author: dkormann
+Requires-Dist: numpy

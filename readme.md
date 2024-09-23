@@ -1,5 +1,5 @@
 
-<img src="./image.png" width="300" height="300">
+<img src="./static/thumbnail.png" width="300" height="300">
 my little chess engine 
 
 

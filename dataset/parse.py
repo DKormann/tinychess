@@ -3,7 +3,7 @@ from chess import Board, Move
 # from AI import handle
 
 from chess import Q, K, N, P, R
-from chess import Board, start, piece_str
+from chess import Board, piece_str
 # from AI import MCTSNode, MChandle
 
 #%%
@@ -21,7 +21,7 @@ with open('dataset/highrated.nums', 'w') as f:
     moves = game.split(',')[1].split()
     nums = []
 
-    board = start()
+    board = Board.start()
     flipped = False
     for move in moves:
       mv = Move.from_algebraic(board, move, flipped)
@@ -30,20 +30,16 @@ with open('dataset/highrated.nums', 'w') as f:
         print('Invalid move:', move, 'in game', i)
         break
       rep = f'{piece_str(board.data[mv.start])}:{mv.start}->{piece_str(board.data[mv.end]).capitalize()}:{mv.end}'
+      if mv.prom is not None: rep+= f'={piece_str(mv.prom).capitalize()}'
 
       board.move(mv)
-
-
-      print(rep)
-      print(board)
-
       nums.append(rep)
 
       flipped = not flipped
       board = board.flip()
 
     if mv is not None: f.write(game.split(',')[0]+ ', '+ ', '.join(nums) + '\n')
-    break
+
 
 
 

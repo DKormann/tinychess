@@ -1,10 +1,10 @@
-from chess import piece_str, Board, start, check_safe, Move, K, Q, R, B, N
+from tinychess.chess import piece_str, Board, check_safe, Move, K, Q, R, B, N
 
 assert piece_str(1) == 'K'
 assert piece_str(-1) == 'k'
 assert piece_str(6) == 'P'
 
-board = start()
+board = Board.start()
 board.move((64), (44))
 board = board.flip()
 board.move((64), (44))
@@ -54,7 +54,7 @@ checkreplay(board, Move(board, 74, 65))
 
 checkreplay(board, Move(board, 30, 21))
 
-board = start()
+board = Board.start()
 
 board.move(64, 54)
 board.move(75, 64)

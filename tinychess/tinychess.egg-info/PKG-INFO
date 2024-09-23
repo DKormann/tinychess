@@ -1,0 +1,22 @@
+Metadata-Version: 2.1
+Name: tinychess
+Version: 0.0.1
+Summary: A minimal chess engine
+Author: dkormann
+License: MIT
+Requires-Python: >=3.7
+Description-Content-Type: text/markdown
+Requires-Dist: numpy
+Requires-Dist: torch
+
+
+<img src="./static/thumbnail.png" width="300" height="300">
+my little chess engine 
+
+
+### start playing
+``` bash
+python main.py
+```
+
+engine implementation heavily inspired by [sunfish](https://github.com/thomasahle/sunfish)

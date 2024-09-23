@@ -1,0 +1,10 @@
+setup.py
+tinychess/AI.py
+tinychess/NNplayer.py
+tinychess/absearch.py
+tinychess/chess.py
+tinychess.egg-info/PKG-INFO
+tinychess.egg-info/SOURCES.txt
+tinychess.egg-info/dependency_links.txt
+tinychess.egg-info/requires.txt
+tinychess.egg-info/top_level.txt
