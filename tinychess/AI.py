@@ -2,7 +2,7 @@
 #%%
 
 import math
-from chess import Board, Move
+from tinychess.chess import Board, Move
 
 oo = float('inf')
 # explore param

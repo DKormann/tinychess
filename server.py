@@ -6,6 +6,7 @@ import functools, json
 from enum import Enum, auto
 from tinychess.AI import MChandle
 from tinychess.absearch import handle
+
 import sys
 
 app = flask.Flask(__name__)
@@ -32,13 +33,22 @@ def move():
     print(f'illegal move {json.loads(data)}')
     flask.abort(400)
   else: hist.append(mv)
+  if state.islost():
+    print('game over')
+    status = "GAME OVER: you won"
   return 'ok'
 
 
 handler = MChandle if '--ai' in sys.argv else handle
+if '--nn' in sys.argv:
+  from tinychess.NNplayer import NNBot
+  bot = NNBot()
+  handler = lambda state: bot.handle(hist[-1])
+
 @app.route('/answer')
 def answer():
   global state, confidence, status
+  if status.startswith('GAME OVER'): return 'ok'
   val, response = handler(state)
   confidence = val
   status = 'your turn'

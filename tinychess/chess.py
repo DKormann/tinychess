@@ -23,20 +23,20 @@ def postok(pos:int): return (pos//10) * 8 + pos % 10
 
 class Move:
   @staticmethod
-  def from_algebraic(board, alg:str, flipped:bool):
+  def from_algebraic(board, alg:str):
     move = alg.strip().replace('x', '').replace('+', '').replace('#', '').replace('=R', '=Q').replace('=B', '=Q')
     res = []
     moves = board.get_moves()
     for opt in moves:
-      for note in opt.algebraics(flipped):
+      for note in opt.algebraics(board.flipped):
         if note == move:
           res += [opt]
 
     # assert res != [], f'Invalid move: {alg} {res}'
     if res == []: return None
     if len(res) > 1:
-      print(flipped)
-      return max(res, key=lambda x: ((x.start%10, x.start//10) if not flipped else (x.start//10, x.start%10)))
+      print(board.flipped)
+      return max(res, key=lambda x: ((x.start%10, x.start//10) if not board.flipped else (x.start//10, x.start%10)))
     return res[0]
 
   def algebraics(self, flipped:bool):
@@ -107,7 +107,7 @@ class Board:
     self.passant:Optional[int] = passant
     self.flipped = flipped
   
-  def movefromtoks(self, toks):
+  def movefromtoks(self, *toks):
     mv = Move(self, toks[0]//8*10 + toks[0]%8, toks[1]//8*10 + toks[1]%8)
     return mv.flip() if self.flipped else mv
   

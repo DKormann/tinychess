@@ -1,69 +1,61 @@
-from chess import Board, Move
-from training.model import Model, device
+from tinychess.chess import Board, Move
+from tinychess.training.model import pretrained, device
 import torch
 import numpy as np
 
 torch.random.manual_seed(2)
-model = Model().to(device)
+
+model = pretrained().to(device)
+model.eval()
+
+
 
 oo = np.inf
 
-model.load_state_dict(torch.load('tinychess/training/model.pth'))
-def tensor(x): return torch.tensor(x).to(device)
+def tensor(x): return torch.tensor(x, device=device)
 
 class NNBot():
   def __init__(self):
-    self.hist = []
-    self.state = Board.start()
+    self.board = Board.start()
     self.poshist = [0]
     self.piecehist = [0]
 
-  def pospred(self, options:list):
-    pol, eval = model(tensor([self.poshist]), tensor([self.piecehist]))
-    res = pol[0,-1]
-    for i in range(64):
-      if i not in options: res[i] = -oo
-    return res.argmax().item()
+  def handle(self, move:Move):
+    assert self.board.move(move)
+    self.poshist.extend(move.tokens())
+    self.piecehist.extend([0, self.board.data[move.start]])
 
-  def handle(self, opponentmove:Move):
-    piece=  self.state.data[opponentmove.start]
-    pos = opponentmove.flip().tokens()
+    def sample(options:list[int]):
+      with torch.no_grad():
+        plan, eval = model(tensor([self.poshist]), tensor([self.piecehist]))
+        for i in range(64):
+          if i not in options: plan[0, -1, i] = -oo
 
-    self.poshist += pos
-    self.piecehist += [0, piece]
-    self.state.move(opponentmove)
+        ev = eval[0, -1].softmax(-1).cpu().numpy()
+        print(ev)
+        ev = (np.array([0., 0.5, 1.]) * ev).sum()
+        dec = plan[0,-1].argmax(-1).item()
+        assert dec in options
+        return dec, 1-ev
 
-    starts, ens = zip(*[mv.tokens() for mv in  self.state.get_moves()])
-    plan = self.pospred(starts)
-    self.poshist += [plan]
-    self.piecehist += [0]
-    plan = self.pospred(ens)
-    mymmove = self.state.movefromtoks([self.poshist[-1], plan])
-    piece = self.state.data[mymmove.start]
-    self.state.move(mymmove)
-    self.poshist += [plan]
-    self.piecehist += [piece]
-    return mymmove
-
-#%%
-bot = NNBot()
-board = Board.start()
-
-def playmove(start,end):
-  global board
-  mv = Move(board, start, end)
-  assert board.move(mv), f'move not possible {mv}'
-  print(board.flip())
-  resp = bot.handle(mv)
-  assert board.move(resp), f'bot illegal move {resp}'
-  print(board)
-
-playmove(64,44)
-playmove(65,55)
-playmove(63,53)
-playmove(72,36)
+    options = [m.tokens() for m in self.board.get_moves()]
+    starts = [o[0] for o in options]
+    start, _ = sample(starts)
+    self.poshist.append(start)
+    self.piecehist.append(0)
+    end, ev = sample([o[1] for o in options if o[0] == start])
+    self.poshist.append(end)
+    self.piecehist.append(self.board.data[start])
+    mv = self.board.movefromtoks(start, end)
+    assert self.board.move(mv)
+    return ev, mv
 
 
-#%%
 
 
+if __name__ == '__main__':
+
+  bot = NNBot()
+  for i in range(10):  
+    print(bot.handle(bot.board.get_moves()[0]))
+    print(bot.board)

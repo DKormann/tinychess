@@ -73,7 +73,6 @@ class LatentAttentionBlock(nn.Module):
     geglu_local, geglu_attention_value = geglu.split((self.expand_dim-self.v_dim, self.v_dim), -1)
     key = torch.cat([k, key], dim=1)
     v = torch.cat([v, geglu_attention_value], dim=1)
-    print(query.shape, key.shape, v.shape, attn_mask.shape)
     attention = F.scaled_dot_product_attention(query, key, v, attn_mask=attn_mask)
     out = F.linear(torch.cat([geglu_local, attention], dim=-1), self.project)
     x = residual + out
