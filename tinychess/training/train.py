@@ -1,6 +1,6 @@
-from model import Model, device
+from tinychess.training.model import Model, device
 import os
-from loaddata import pieces, positions, policy, wins
+from tinychess.training.loaddata import pieces, positions, policy, wins
 from collections import namedtuple
 import torch
 import numpy as np
