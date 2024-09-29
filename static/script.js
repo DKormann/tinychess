@@ -3,6 +3,7 @@ let board = document.getElementById('board');
 let statusbar = document.getElementById("status")
 let face = document.getElementById("face")
 let history = document.getElementById("history")
+let chat = document.getElementById("chat")
 
 
 tiles = [];
@@ -71,6 +72,8 @@ document.addEventListener('keydown',e=>{
 function movestring(move, flip = false){
 
   function numpos(pos){
+    console.log(pos);
+    
     pos = Number(pos)
     console.log(pos)
     if (flip) pos = 77-pos
@@ -81,13 +84,13 @@ function movestring(move, flip = false){
     console.log(row, col)
     return `${row}${8-col}`
   }
-
-  [start, end] = move.split("->").map(numpos)
+  console.log(move);
+  
+  [start, end] = move.split(":")[1].split("->").map(numpos)
   return `${start}=>${end}`
 
 }
 
-fetch('http://localhost:8081/reset')
 
 active = [-1,-1]
 
@@ -126,9 +129,10 @@ function get_response(){
 function update_face(conf){
   emoji = ['🥶','🤯','😳','😒','🤨','🤔','😎','😏','🤩'][Math.max(0, Math.min(8, Math.round(Number(conf) *10 -1)))]
   face.textContent = emoji
+  chat.innerHTML = `<p>conf:${conf}</p>`
 }
 
-get_board()
+fetch('http://localhost:8081/reset').then(()=>get_board(false))
 
 function send_move(move){
   thinking = true

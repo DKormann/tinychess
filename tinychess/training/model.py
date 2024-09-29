@@ -32,7 +32,6 @@ with torch.no_grad():
   negative_infinity_matrix_base = torch.empty_like(position_bias_base).fill_(-float("inf"))
   causal_mask = torch.tril(torch.ones((max_seq_len, max_seq_len), device=device, dtype=torch.bool))
 
-#%%
 
 class LatentAttentionBlock(nn.Module):
   """ Efficient fused latent-space attention block. Linear keys and queries, nonlinear values."""
@@ -87,6 +86,7 @@ class Model(nn.Module):
     self.timeemb = nn.Parameter(torch.randn(max_seq_len, residual_depth)/residual_depth**.5)
     self.posemb = nn.Embedding(n_pos, residual_depth, scale_grad_by_freq=True)
     self.pieceemb = nn.Embedding(n_piece, residual_depth, scale_grad_by_freq=True)
+    self.color_emb = nn.Embedding(3, residual_depth)
     self.norm = nn.LayerNorm(residual_depth)
     self.blocks:list[LatentAttentionBlock] = nn.ModuleList([LatentAttentionBlock(residual_depth) for _ in range(num_blocks)])
     self.norm2 = nn.LayerNorm(residual_depth)
@@ -94,37 +94,33 @@ class Model(nn.Module):
 
   def out(self, x): return torch.matmul(x, self.posemb.weight.t())
 
-  def forward(self, xpos, xpiece):
-
-    x = self.posemb(xpos) + self.pieceemb(xpiece) 
-    x += self.timeemb.unsqueeze(0)[:,:xpos.shape[1]]
+  def forward(self, xpos:torch.Tensor, xpiece:torch.Tensor):
+    x = self.posemb(xpos)
+    tx = self.timeemb.unsqueeze(0)[:,:xpos.shape[1]]
+    x += tx
+    x += self.pieceemb(xpiece.abs())
+    x += self.color_emb(xpiece.sign())
     x = self.norm(x)
     for block in self.blocks: x = block(x)
     x = self.norm2(x)
     return self.out(x), self.winprob(x)
-  
-  def inference(self, xpos, xpiece, k, v):
-    x = self.posemb(xpos) + self.pieceemb(xpiece) + self.timeemb.unsqueeze(0)[:,:xpos.shape[1]]
-    x = self.norm(x)
-    KK = []
-    VV = []
-    for block, ki, vi in zip(self.blocks, k, v):
-      x, kk, vv = block.inference(x, ki, vi)
-      KK.append(kk)
-      VV.append(vv)
-
-    x = self.norm2(x)
-    return self.out(x), self.winprob(x), KK, VV
 
 def pretrained():
   model = Model().to(device)
   model.load_state_dict(torch.load('tinychess/training/model.pth'))
-  return model
 
+  return model
 #%%
 if __name__ == '__main__':
-  B = 2
-  xpos = torch.randint(0, n_pos, (B, max_seq_len)).to(device)
-  xpiece = torch.randint(0, n_piece, (B, max_seq_len)).to(device)
-  model = Model().to(device)
-  policy, win = model(xpos, xpiece)
+  
+  model = pretrained()
+  model.eval()
+  print(model.timeemb.shape)
+
+  p = model(torch.tensor([[0, 0, 52, 36]]).to(device), torch.tensor([[0, 0, 0, 6]]).to(device))
+  print()
+  print(p[0][0].int().reshape(-1,8,8))
+
+  for f in p[0][0].int():
+    plt.imshow(f.reshape(8,8).cpu().numpy())
+    plt.show()

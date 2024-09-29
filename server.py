@@ -1,4 +1,3 @@
-
 import flask
 import flask_cors
 import json
@@ -12,7 +11,7 @@ import sys
 app = flask.Flask(__name__)
 flask_cors.CORS(app, resources={r"/*": {"origins": "*"}})
 
-from tinychess.chess import Board
+from tinychess.chess import Board, Move
 
 state = Board.empty()
 status = "running"
@@ -21,32 +20,28 @@ hist = []
 
 @app.route('/getstate')
 def get_state():
-
-  return json.dumps({'confidence':confidence, 'board':str(state.flip() if state.flipped else state), "status":status, "history":list(map(str, hist))})
+  return json.dumps({'confidence':confidence, 'board':str(state), "status":status, "history":list(map(str, hist))})
 
 @app.route('/move', methods=['POST'])
 def move():
-  global state,status
+  global state, status
   status = 'thinking ...'
-  data = flask.request.json['move']
-  if not (mv := state.move(**json.loads(data))):
-    print(f'illegal move {json.loads(data)}')
+  data = json.loads(flask.request.json['move'])
+  move = Move(state.data[int(data['start'])], int(data['start']), int(data['end']), data['prom'])
+  print(move)
+  if not (newstate := state.move(move)):
+    print(f'illegal move')
     flask.abort(400)
-  else: hist.append(mv)
-  if state.islost():
+  else: hist.append(move)
+  state = newstate
+  if state.isover():
     print('game over')
     status = "GAME OVER: you won"
   return 'ok'
 
-
-handler = MChandle if '--ai' in sys.argv else handle
-if '--nn' in sys.argv:
-  from tinychess.NNplayer import NNBot
-  bot = NNBot()
-  handler = lambda state: bot.handle(hist[-1])
-
 @app.route('/answer')
 def answer():
+  print(f'ANSWER {hist}')
   global state, confidence, status
   if status.startswith('GAME OVER'): return 'ok'
   val, response = handler(state)
@@ -54,19 +49,27 @@ def answer():
   status = 'your turn'
   print(f'confidence: {val}, response: {response}')
   if response == 'resign': status = "GAME OVER: you won"
-  mv = state.move(response.start, response.end, response.prom)
-  if state.islost():
+  state = state.move(response.start, response.end, response.prom)
+  if state.isover():
     print('game over')
     status = "GAME OVER: you lost"
-  hist.append(mv)
+  hist.append(response)
   return "ok"
 
 @app.route('/reset')
 def reset():
-  global state, status, hist
+  print("RESET")
+  global state, status, hist, handler
+
+  hist=  []
+  handler = MChandle if '--ai' in sys.argv else handle
+  if '--nn' in sys.argv:
+    from tinychess.NNplayer import NNBot
+    bot = NNBot()
+    handler = lambda state: bot.handle(hist[-1])
+
   status = "your turn"
   state = Board.start()
-  hist=  []
   return 'ok'
 
 import webbrowser
